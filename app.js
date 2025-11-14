@@ -1,5 +1,5 @@
-// Photo Transformation: Hungarian (Munkres) Algorithm Edition
-// Uses munkres-js for optimal pixel assignment
+// Photo Transformation: OPTIMIZED Greedy Algorithm Edition
+// Efficient pixel rearrangement without massive memory usage
 // (c) 2025, customized for hosni-mubaraker
 
 let inputImage = null;
@@ -44,10 +44,13 @@ fileInput.addEventListener('change', (e) => {
 });
 speedSlider.addEventListener('input', (e) => {
     const value = e.target.value;
-    speedValue.textContent = 'Optimal (Recommended)';
+    let label = 'Balanced';
+    if (value < 33) label = 'Fast (Lower Quality)';
+    else if (value > 66) label = 'Slow (Higher Quality)';
+    speedValue.textContent = label;
 });
 transformBtn.addEventListener('click', () => {
-    if (!isProcessing && inputImage && targetImage) transformImageOptimal();
+    if (!isProcessing && inputImage && targetImage) transformImageGreedy();
 });
 downloadBtn.addEventListener('click', () => {
     const link = document.createElement('a');
@@ -102,16 +105,11 @@ function handleImageUpload(file) {
     reader.readAsDataURL(file);
 }
 
-// Main transformation with Hungarian algorithm
-async function transformImageOptimal() {
+// OPTIMIZED GREEDY ALGORITHM (Fast & Memory-Efficient)
+// This uses a smart greedy approach: for each target pixel, find the best matching input pixel
+// Much faster than Hungarian and uses minimal memory
+async function transformImageGreedy() {
     if (isProcessing) return;
-    
-    // Check if munkres-js is loaded
-    if (typeof Munkres === 'undefined') {
-        status.textContent = 'Error: munkres-js library not loaded. Check console.';
-        console.error('Munkres is not defined. Make sure munkres-js CDN is loaded before app.js');
-        return;
-    }
 
     isProcessing = true;
     transformBtn.disabled = true;
@@ -119,7 +117,9 @@ async function transformImageOptimal() {
     progressContainer.style.display = 'block';
     
     const size = parseInt(sizeSelect.value);
-    status.textContent = 'Calculating optimal transformation (please wait)...';
+    const quality = parseInt(speedSlider.value);
+    
+    status.textContent = 'Processing image with greedy algorithm...';
 
     try {
         outputCanvas.width = size;
@@ -132,47 +132,45 @@ async function transformImageOptimal() {
 
         const inputPixels = extractPixels(inputImageData);
         const targetPixels = extractPixels(targetImageData);
-
         const N = targetPixels.length;
 
-        // Build cost matrix
-        status.textContent = 'Building cost matrix (' + N + ' pixels)...';
-        const costMatrix = [];
-        
+        // Track which input pixels have been used
+        const used = new Array(N).fill(false);
+
+        status.textContent = 'Rearranging pixels using greedy optimization...';
+
         for (let i = 0; i < N; i++) {
-            const row = [];
-            const t = targetPixels[i];
-            
-            for (let j = 0; j < N; j++) {
-                const s = inputPixels[j];
-                row.push(colorDistanceSquared(t, s));
+            const targetPixel = targetPixels[i];
+            let bestMatch = -1;
+            let bestDistance = Infinity;
+
+            // Find closest available pixel (with early exit for optimization)
+            const searchLimit = Math.min(N, Math.max(100, Math.floor(N * (quality / 100))));
+            let searchCount = 0;
+
+            for (let j = 0; j < N && searchCount < searchLimit; j++) {
+                if (used[j]) continue;
+
+                const distance = colorDistanceSquared(targetPixel, inputPixels[j]);
+                if (distance < bestDistance) {
+                    bestDistance = distance;
+                    bestMatch = j;
+                }
+                searchCount++;
             }
-            
-            costMatrix.push(row);
-            
+
+            // Assign best match
+            if (bestMatch !== -1) {
+                setPixel(outputImageData, i, inputPixels[bestMatch]);
+                used[bestMatch] = true;
+            } else {
+                // Fallback: use target pixel itself
+                setPixel(outputImageData, i, targetPixel);
+            }
+
             // Update progress
-            if (i % 128 === 0) {
-                updateProgressBar((i / N) * 0.3); // 30% for matrix building
-                await sleep(0);
-            }
-        }
-
-        // Run Hungarian algorithm
-        status.textContent = 'Running Hungarian algorithm...';
-        await sleep(50);
-        
-        const munkres = new Munkres();
-        const assignments = munkres.compute(costMatrix);
-
-        // Apply assignments
-        status.textContent = 'Applying optimal pixel assignment...';
-        
-        for (let k = 0; k < assignments.length; k++) {
-            const [targetIdx, inputIdx] = assignments[k];
-            setPixel(outputImageData, targetIdx, inputPixels[inputIdx]);
-            
-            if (k % 128 === 0) {
-                updateProgressBar(0.3 + (k / assignments.length) * 0.7); // 70% for assignment
+            if (i % Math.max(1, Math.floor(N / 100)) === 0) {
+                updateProgressBar(i / N);
                 await sleep(0);
             }
         }
