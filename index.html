@@ -255,7 +255,7 @@
 <body>
     <div class="container">
         <h1>🎨 Photo Transformation</h1>
-        <p class="subtitle">Transform any photo using pixel rearrangement algorithm</p>
+        <p class="subtitle">Transform any photo using optimal pixel rearrangement algorithm</p>
 
         <div class="upload-section">
             <div class="upload-box" id="uploadBox">
@@ -268,24 +268,23 @@
 
         <div class="info-box">
             <h4>ℹ️ How it works:</h4>
-            <p>This algorithm takes pixels from your uploaded photo and rearranges them to match the target image style. 
-            Each pixel is optimally placed to recreate the target while preserving your photo's original colors!</p>
+            <p>This algorithm uses the Hungarian (Munkres) optimal assignment method to rearrange pixels from your uploaded photo to match the target image style. Each pixel is optimally placed to recreate the target while preserving your photo's original colors!</p>
         </div>
 
         <div class="controls">
             <div class="control-group">
                 <label for="sizeSelect">Output Size:</label>
                 <select id="sizeSelect">
-                    <option value="64">64x64 (Fast - ~5s)</option>
-                    <option value="128" selected>128x128 (Balanced - ~20s)</option>
-                    <option value="256">256x256 (Quality - ~2min)</option>
+                    <option value="64">64x64 (Fast - ~10s)</option>
+                    <option value="128" selected>128x128 (Balanced - ~1min)</option>
+                    <option value="256">256x256 (Quality - ~5min)</option>
                 </select>
             </div>
 
             <div class="control-group">
-                <label for="speedSlider">Speed vs Quality:</label>
+                <label for="speedSlider">Algorithm Mode:</label>
                 <input type="range" id="speedSlider" min="1" max="100" value="50">
-                <div class="size-value" id="speedValue">Balanced</div>
+                <div class="size-value" id="speedValue">Optimal (Recommended)</div>
             </div>
         </div>
 
@@ -322,10 +321,12 @@
 
         <div class="footer">
             <p>Inspired by <a href="https://github.com/Spu7Nix/obamify" target="_blank">Obamify</a> by Spu7Nix</p>
-            <p>Using custom target image | Built with vanilla JavaScript</p>
+            <p>Using Hungarian Algorithm for optimal pixel assignment | Built with vanilla JavaScript</p>
         </div>
     </div>
-<script src="https://cdn.jsdelivr.net/npm/munkres-js@1.2.2/munkres.min.js"></script>
-<script src="app.js"></script>
+
+    <!-- IMPORTANT: Load munkres-js BEFORE app.js -->
+    <script src="https://cdn.jsdelivr.net/npm/munkres-js@1.2.2/munkres.min.js"></script>
+    <script src="app.js"></script>
 </body>
 </html>
